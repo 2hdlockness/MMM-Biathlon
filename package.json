@@ -1,30 +1,27 @@
 {
-  "name": "mmm-template",
+  "name": "MMM-Biathlon",
   "version": "1.0.0",
-  "description": "[Module description]",
-  "main": "MMM-Template.js",
-  "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "npm run lint"
+  "description": "MagicMirror module to display biathlon event results.",
+  "main": "MMM-Biathlon.js",
+    "keywords": [
+    "MagicMirror",
+    "Sports",
+	"Biathlon"
+  ],
+  "homepage": "https://github.com/2hdlockness/MMM-Biathlon#readme",
+  "bugs": {
+    "url": "https://github.com/2hdlockness/MMM-Biathlon/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+[GitHub url].git"
+    "url": "https://github.com/2hdlockness/MMM-Biathlon.git"
+  },  
+  "scripts": {
+    "start": "node server.js"
   },
-  "keywords": [
-    "template"
-  ],
-  "author": "[Author]",
-  "license": "MIT",
-  "bugs": {
-    "url": "[GitHub url]/issues"
+  "dependencies": {
+    "axios": "^1.0.0"
   },
-  "homepage": "[GitHub url]#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.10.0",
-    "@stylistic/eslint-plugin": "^2.7.2",
-    "eslint": "^9.10.0",
-    "globals": "^15.9.0"
-  }
+  "author": "2hdlockness",
+  "license": "MIT"
 }
