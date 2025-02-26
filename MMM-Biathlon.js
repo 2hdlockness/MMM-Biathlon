@@ -10,11 +10,22 @@ Module.register("MMM-Biathlon", {
     EventClassificationId: ["BTSWRLCP","BTSWRLCH"]
   },
   
-   getTranslations: function() {
-       return {
-           fr: "translations/fr.json"
-       };
-   },
+	getTranslations: function() {
+		const translations = {
+			fr: "translations/fr.json",
+			it: "translations/it.json",
+			de: "translations/de.json",
+			es: "translations/es.json",
+			no: "translations/no.json",
+			zh: "translations/zh.json"
+		};
+
+		if (translations[config.language]) {
+			return { [config.language]: translations[config.language] };
+		}
+
+		return {};
+	},
 
   getStyles: function() {
     return ["MMM-Biathlon.css", "https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"];
