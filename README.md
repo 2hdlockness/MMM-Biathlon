@@ -41,8 +41,6 @@ In your terminal, go to your [MagicMirror²][mm] Module folder and clone MMM-Tem
 ```bash
 cd ~/MagicMirror/modules
 git clone https://github.com/2hdlockness/MMM-Biathlon
-cd MMM-Biathlon
-npm install
 ```
 
 ## Using the module
