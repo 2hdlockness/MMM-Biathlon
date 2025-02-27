@@ -36,7 +36,7 @@ MMM-Biathlon is a MagicMirror module that retrieves and displays biathlon race r
 
 ### Install
 
-In your terminal, go to your [MagicMirror²][mm] Module folder and clone MMM-Template:
+In your terminal, go to your [MagicMirror²][mm] Module folder and clone MMM-Biathlon:
 
 ```bash
 cd ~/MagicMirror/modules
