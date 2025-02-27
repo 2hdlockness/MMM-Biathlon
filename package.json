@@ -1,0 +1,24 @@
+{
+  "name": "MMM-Biathlon",
+  "version": "1.0.0",
+  "description": "MagicMirror module to display biathlon event results.",
+  "main": "MMM-Biathlon.js",
+    "keywords": [
+    "MagicMirror",
+    "Sports",
+	"Biathlon"
+  ],
+  "homepage": "https://github.com/2hdlockness/MMM-Biathlon#readme",
+  "bugs": {
+    "url": "https://github.com/2hdlockness/MMM-Biathlon/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2hdlockness/MMM-Biathlon.git"
+  },  
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "2hdlockness",
+  "license": "MIT"
+}
