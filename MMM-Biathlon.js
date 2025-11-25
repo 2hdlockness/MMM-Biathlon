@@ -1,34 +1,36 @@
 Module.register("MMM-Biathlon", {
   defaults: {
-    seasonid: "2425",
+    seasonid: "2526",
     showNextEvent: true,
-	showtime: true,
-	showshoot: true,
+    showtime: true,
+    showshoot: true,
     maximumEntries: 5,
     transitionInterval: 20000,
     updateInterval: 3600000,
     EventClassificationId: ["BTSWRLCP","BTSWRLCH"]
   },
-  
-	getTranslations: function() {
-		const translations = {
-			fr: "translations/fr.json",
-			it: "translations/it.json",
-			de: "translations/de.json",
-			es: "translations/es.json",
-			no: "translations/no.json",
-			zh: "translations/zh.json"
-		};
 
-		if (translations[config.language]) {
-			return { [config.language]: translations[config.language] };
-		}
+  getTranslations: function() {
+    const translations = {
+      fr: "translations/fr.json",
+      it: "translations/it.json",
+      de: "translations/de.json",
+      es: "translations/es.json",
+      no: "translations/no.json",
+      zh: "translations/zh.json"
+    };
 
-		return {};
-	},
+    if (translations[config.language]) {
+      return { [config.language]: translations[config.language] };
+    }
+    return {};
+  },
 
   getStyles: function() {
-    return ["MMM-Biathlon.css", "https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"];
+    return [
+      "MMM-Biathlon.css",
+      "https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"
+    ];
   },
 
   getScripts: function() {
@@ -43,7 +45,8 @@ Module.register("MMM-Biathlon", {
     this.currentEventIndex = 0;
     this.ibuIdNameMapping = {};
     this.eventsLastFetched = 0;
-    
+
+    // Load IBU ID name mapping file
     fetch('modules/MMM-Biathlon/resources/IbuIdName.json')
       .then(response => response.json())
       .then(data => {
@@ -55,9 +58,7 @@ Module.register("MMM-Biathlon", {
 
     this.requestEvents();
 
-    setInterval(() => {
-      this.requestEvents();
-    }, this.config.updateInterval);
+    setInterval(() => this.requestEvents(), this.config.updateInterval);
 
     setInterval(() => {
       if (this.raceResults.length > 0) {
@@ -121,22 +122,48 @@ Module.register("MMM-Biathlon", {
   },
 
   updateDomIfNeeded: function() {
-    const raceChanged = this.raceResults.length > 0 && this.currentRaceIndex < this.raceResults.length;
-    const eventChanged = this.nextevent.length > 0 && this.currentEventIndex < this.nextevent.length;
-    if (raceChanged || eventChanged) {
-      this.updateDom();
-    }
+    this.updateDom();
   },
 
   getDom: function () {
     const wrapper = document.createElement("div");
 
+    // ============================
+    //  NEW LOGIC — no results yet
+    // ============================
     if (this.raceResults.length === 0) {
+
+      // If next event exists → show it instead of “LOADING”
+      if (this.config.showNextEvent && this.nextevent.length > 0) {
+        const event = this.nextevent[this.currentEventIndex];
+        const nextEventDiv = document.createElement("div");
+
+        nextEventDiv.classList.add("biathlon-next-event-wrapper");
+        nextEventDiv.innerHTML = `
+          <div class="biathlon-next-event">
+            <img src="modules/MMM-Biathlon/resources/img/calendar.png" class="calendar-icon">
+            ${this.translate("Next event")}<br>
+            ${this.translate(event.Description)} - ${this.translate(event.ShortDescription)}<br>
+            ${new Date(event.StartDate).toLocaleDateString(config.locale)}
+            —
+            ${new Date(event.EndDate).toLocaleDateString(config.locale)}
+            ${this.translate(event.NatLong)}
+          </div>
+        `;
+
+        wrapper.appendChild(nextEventDiv);
+        return wrapper;
+      }
+
+      // No results + no next event → normal LOADING
       wrapper.innerHTML = this.translate("LOADING");
       wrapper.classList.add("dimmed", "light", "small");
       return wrapper;
     }
 
+    // ====================================
+    //          DISPLAY RACE RESULTS
+    // ====================================
     const race = this.raceResults[this.currentRaceIndex];
 
     const countryCodeCorrections = {
@@ -147,11 +174,14 @@ Module.register("MMM-Biathlon", {
 
     const raceDiv = document.createElement("div");
     raceDiv.classList.add("biathlon-race-results");
+
     raceDiv.innerHTML = `
-	<div class="biathlon-race-title">
-		${this.translate(race.inforace.Description)}<br>
-		${this.translate(race.inforace.ShortDescription)} - ${new Date(race.inforace.StartTime).toLocaleDateString(config.locale)}<br><span class="organizer">(${race.inforace.Organizer})</span>
-	</div>
+      <div class="biathlon-race-title">
+        ${this.translate(race.inforace.Description)}<br>
+        ${this.translate(race.inforace.ShortDescription)} -
+        ${new Date(race.inforace.StartTime).toLocaleDateString(config.locale)}<br>
+        <span class="organizer">(${race.inforace.Organizer})</span>
+      </div>
       <table class="biathlon-results-table">
         <tbody>
           ${
@@ -160,53 +190,52 @@ Module.register("MMM-Biathlon", {
                 .filter(result => result.Rank !== null)
                 .slice(0, this.config.maximumEntries)
                 .map((result) => {
-                    let countryCode = result.Nat.toLowerCase().slice(0, 2);
-                    if (countryCodeCorrections.hasOwnProperty(countryCode)) {
-                        countryCode = countryCodeCorrections[countryCode];
-                    }
-                    const flagClass = `fi fi-${countryCode}`;
-                    const name = this.ibuIdNameMapping[result.Name] || result.Name;
+                  let countryCode = result.Nat.toLowerCase().slice(0, 2);
+                  if (countryCodeCorrections[countryCode]) {
+                    countryCode = countryCodeCorrections[countryCode];
+                  }
+                  const flagClass = `fi fi-${countryCode}`;
+                  const name = this.ibuIdNameMapping[result.Name] || result.Name;
 
-                    return `
-                    <tr>
-                      <td class="rank">
-                        ${parseInt(result.Rank) === 1 ? '<img src="modules/MMM-Biathlon/resources/img/gold.png" class="medal-icon">' :
-                          parseInt(result.Rank) === 2 ? '<img src="modules/MMM-Biathlon/resources/img/silver.png" class="medal-icon">' :
-                          parseInt(result.Rank) === 3 ? '<img src="modules/MMM-Biathlon/resources/img/bronze.png" class="medal-icon">' :
-                          result.Rank || ""}
-                      </td>
-                      <td><span class="${flagClass} flag-icon"></span></td>
-                      <td class="name">${name}</td>
-					  ${this.config.showtime ? `<td class="total-time">${result.TotalTime}</td>` : ""}
-					  ${this.config.showshoot ? `<td class="shootings">${result.Shootings}</td>` : ""}
-                    </tr>`;
-                })
-                .join("")
+                  return `
+                  <tr>
+                    <td class="rank">
+                      ${parseInt(result.Rank) === 1 ? '<img src="modules/MMM-Biathlon/resources/img/gold.png" class="medal-icon">' :
+                        parseInt(result.Rank) === 2 ? '<img src="modules/MMM-Biathlon/resources/img/silver.png" class="medal-icon">' :
+                        parseInt(result.Rank) === 3 ? '<img src="modules/MMM-Biathlon/resources/img/bronze.png" class="medal-icon">' :
+                        result.Rank || ""}
+                    </td>
+                    <td><span class="${flagClass} flag-icon"></span></td>
+                    <td class="name">${name}</td>
+                    ${this.config.showtime ? `<td class="total-time">${result.TotalTime}</td>` : ""}
+                    ${this.config.showshoot ? `<td class="shootings">${result.Shootings}</td>` : ""}
+                  </tr>`;
+                }).join("")
             : race.resultracerelay
-				.filter(result => result.Rank !== null)
+                .filter(result => result.Rank !== null)
                 .slice(0, this.config.maximumEntries)
                 .map((result) => {
-                    let countryCode = result.Nat.toLowerCase().slice(0, 2);
-                    if (countryCodeCorrections.hasOwnProperty(countryCode)) {
-                        countryCode = countryCodeCorrections[countryCode];
-                    }
-                    const flagClass = `fi fi-${countryCode}`;
-                    const name = this.ibuIdNameMapping[result.Name] || result.Name;
-                    return `
-                    <tr>
-                      <td class="rank">
-                        ${parseInt(result.Rank) === 1 ? '<img src="modules/MMM-Biathlon/resources/img/gold.png" class="medal-icon">' :
-                          parseInt(result.Rank) === 2 ? '<img src="modules/MMM-Biathlon/resources/img/silver.png" class="medal-icon">' :
-                          parseInt(result.Rank) === 3 ? '<img src="modules/MMM-Biathlon/resources/img/bronze.png" class="medal-icon">' :
-                          result.Rank || ""}
-                      </td>
-                      <td><span class="${flagClass} flag-icon"></span></td>
-                      <td class="name">${this.translate(name)}</td>
-					  ${this.config.showtime ? `<td class="total-time">${result.TotalTime}</td>` : ""}
-					  ${this.config.showshoot ? `<td class="shootings">${result.Shootings}</td>` : ""}
-                    </tr>`;
-                })
-                .join("")
+                  let countryCode = result.Nat.toLowerCase().slice(0, 2);
+                  if (countryCodeCorrections[countryCode]) {
+                    countryCode = countryCodeCorrections[countryCode];
+                  }
+                  const flagClass = `fi fi-${countryCode}`;
+                  const name = this.ibuIdNameMapping[result.Name] || result.Name;
+
+                  return `
+                  <tr>
+                    <td class="rank">
+                      ${parseInt(result.Rank) === 1 ? '<img src="modules/MMM-Biathlon/resources/img/gold.png" class="medal-icon">' :
+                        parseInt(result.Rank) === 2 ? '<img src="modules/MMM-Biathlon/resources/img/silver.png" class="medal-icon">' :
+                        parseInt(result.Rank) === 3 ? '<img src="modules/MMM-Biathlon/resources/img/bronze.png" class="medal-icon">' :
+                        result.Rank || ""}
+                    </td>
+                    <td><span class="${flagClass} flag-icon"></span></td>
+                    <td class="name">${name}</td>
+                    ${this.config.showtime ? `<td class="total-time">${result.TotalTime}</td>` : ""}
+                    ${this.config.showshoot ? `<td class="shootings">${result.Shootings}</td>` : ""}
+                  </tr>`;
+                }).join("")
           }
         </tbody>
       </table>
@@ -214,24 +243,28 @@ Module.register("MMM-Biathlon", {
 
     wrapper.appendChild(raceDiv);
 
-    if (this.config.showNextEvent && Array.isArray(this.nextevent) && this.nextevent.length > 0) {
+    // ====================================
+    //      NEXT EVENT (after results)
+    // ====================================
+    if (this.config.showNextEvent && this.nextevent.length > 0) {
       const nextEventDiv = document.createElement("div");
       nextEventDiv.classList.add("biathlon-next-event-wrapper");
+
       const event = this.nextevent[this.currentEventIndex];
-      if (event && event.Description && event.StartDate && event.EndDate) {
-        const eventDiv = document.createElement("div");
-        eventDiv.classList.add("biathlon-next-event");
-        eventDiv.innerHTML = `
-	<div>
-		
-		<img src="modules/MMM-Biathlon/resources/img/calendar.png" class="calendar-icon"> ${this.translate("Next event")}<br>
-		${this.translate(event.Description)} - ${this.translate(event.ShortDescription)}<br>
-		${new Date(event.StartDate).toLocaleDateString(config.locale)} - ${new Date(event.EndDate).toLocaleDateString(config.locale)} ${this.translate(event.NatLong)}
-	</div>
-        `;
-        nextEventDiv.appendChild(eventDiv);
-        wrapper.appendChild(nextEventDiv);
-      }
+
+      nextEventDiv.innerHTML = `
+        <div class="biathlon-next-event">
+          <img src="modules/MMM-Biathlon/resources/img/calendar.png" class="calendar-icon">
+          ${this.translate("Next event")}<br>
+          ${this.translate(event.Description)} - ${this.translate(event.ShortDescription)}<br>
+          ${new Date(event.StartDate).toLocaleDateString(config.locale)}
+          —
+          ${new Date(event.EndDate).toLocaleDateString(config.locale)}
+          ${this.translate(event.NatLong)}
+        </div>
+      `;
+
+      wrapper.appendChild(nextEventDiv);
     }
 
     return wrapper;
