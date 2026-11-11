@@ -1,6 +1,6 @@
 Module.register("MMM-Biathlon", {
   defaults: {
-    seasonid: "2526",
+    seasonid: "2627",
     showNextEvent: true,
     showtime: true,
     showshoot: true,
